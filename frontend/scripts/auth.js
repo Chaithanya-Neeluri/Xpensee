@@ -1,6 +1,6 @@
 // Authentication JavaScript
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 // DOM Elements
 const loginTab = document.querySelector('[data-tab="login"]');
