@@ -4,7 +4,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 
@@ -17,54 +16,77 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require('../backend/routes/authRoutes');
 const expenseRoutes = require('../backend/routes/expenseRoutes');
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/expenses', expenseRoutes);
-
-// MongoDB connection (for serverless, we need to handle connection differently)
+// MongoDB connection (serverless-friendly with connection caching)
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Connect to MongoDB with serverless-friendly connection
-let cachedDb = null;
+// Cache MongoDB connection for serverless
+let cachedConnection = null;
 
 async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
   }
 
   try {
-    const client = await mongoose.connect(MONGODB_URI, {
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not set');
+    }
+
+    // Close existing connection if any
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
+
+    const connection = await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
     });
-    cachedDb = client;
+    
+    cachedConnection = connection;
     console.log('✅ MongoDB connected successfully');
-    return cachedDb;
+    return connection;
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    cachedConnection = null;
     throw error;
   }
 }
 
-// Connect before handling requests
+// Connect to database before handling requests
 app.use(async (req, res, next) => {
-  if (!cachedDb) {
+  try {
     await connectToDatabase();
+    next();
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Database connection failed', 
+      error: error.message 
+    });
   }
-  next();
 });
 
+// API Routes (note: routes are already prefixed with /api in vercel.json)
+app.use('/auth', authRoutes);
+app.use('/expenses', expenseRoutes);
+
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'API is running' });
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'API is running',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+  console.error('Error:', err.stack);
+  res.status(err.status || 500).json({ 
+    message: err.message || 'Something went wrong!', 
+    error: process.env.NODE_ENV === 'production' ? {} : err.stack 
+  });
 });
 
-// Export for Vercel
+// Export for Vercel serverless function
 module.exports = app;
-
