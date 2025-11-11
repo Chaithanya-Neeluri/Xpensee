@@ -9,6 +9,15 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
+const allowedOrigins = [
+  'https://xpensee-b8glzsfb4-loomivas-projects.vercel.app',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 // Middleware
 app.use(cors());

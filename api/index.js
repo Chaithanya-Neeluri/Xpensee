@@ -13,8 +13,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Import routes
-const authRoutes = require('../backend/routes/authRoutes');
-const expenseRoutes = require('../backend/routes/expenseRoutes');
+const authRoutes = require('./routes/authRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
 
 // MongoDB connection (serverless-friendly with connection caching)
 const MONGODB_URI = process.env.MONGODB_URI;
