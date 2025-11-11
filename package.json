@@ -4,8 +4,8 @@
   "description": "A full-stack expense tracker web application",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js"
+    "start": "node api/server.js",
+    "dev": "nodemon api/server.js"
   },
   "keywords": ["expense-tracker", "full-stack", "mongodb", "express"],
   "author": "",

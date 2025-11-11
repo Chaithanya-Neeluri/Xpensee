@@ -1,7 +1,6 @@
 // Dashboard JavaScript
 
-// Use environment-based API URL (works in both development and production)
-const API_BASE_URL = window.location.origin + '/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // DOM Elements
 const expenseForm = document.getElementById('expenseForm');
